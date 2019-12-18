@@ -22,8 +22,11 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.Objects;
+
+import utm.ptm.mtransport.services.LocationService;
 
 
 /**
@@ -50,6 +53,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     private MapView mMapView;
     private View mView;
+    private LocationService locationService;
 
 
     private OnFragmentInteractionListener mListener;
@@ -76,6 +80,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return fragment;
     }
 
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +90,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -100,6 +108,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -108,8 +118,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             mMapView.onCreate(null);
             mMapView.onResume();
             mMapView.getMapAsync(this);
+            locationService = new LocationService(mView);
         }
     }
+
+
 
     @Override
     public void onAttach(Context context) {
@@ -128,15 +141,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mListener = null;
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        MapsInitializer.initialize(mView.getContext());
 
-        // --- Customize the map style
+
+    public void setMapStyle(int style) {
         try {
-            boolean success = googleMap.setMapStyle(
+            boolean success = mMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
-                            mView.getContext(), R.raw.map_style));
+                            mView.getContext(), style));
 
             if (!success) {
                 Log.e(TAG, "Style parsing failed.");
@@ -144,9 +155,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         } catch (Resources.NotFoundException e) {
             Log.e(TAG, "Can't find style. Error: ", e);
         }
-        // ---
+    }
 
+
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        MapsInitializer.initialize(mView.getContext());
         mMap = googleMap;
+
+        boolean locationPermissionGranted = locationService.checkPermission();
+        if (!locationPermissionGranted) {
+            locationService.requestPermission();
+        }
+
+        setMapStyle(R.raw.map_style);
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
 
