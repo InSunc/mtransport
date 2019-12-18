@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">mTransport</string>
+    <string name="google_maps_key">AIzaSyBDgaO8yQGk7Sy2ZEK-9d-qrw9v70h-C_0</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
