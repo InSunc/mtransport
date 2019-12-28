@@ -3,12 +3,10 @@ package utm.ptm.mtransport;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
@@ -16,17 +14,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.android.material.snackbar.Snackbar;
 
-import java.util.Objects;
-
-import utm.ptm.mtransport.services.LocationService;
+import utm.ptm.mtransport.utils.LocationUtils;
 
 
 /**
@@ -53,8 +49,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     private MapView mMapView;
     private View mView;
-    private LocationService locationService;
-
+    private LocationUtils mLocationUtils;
 
     private OnFragmentInteractionListener mListener;
 
@@ -118,7 +113,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             mMapView.onCreate(null);
             mMapView.onResume();
             mMapView.getMapAsync(this);
-            locationService = new LocationService(mView);
+            mLocationUtils = new LocationUtils(mView);
         }
     }
 
@@ -148,7 +143,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             boolean success = mMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                             mView.getContext(), style));
-
             if (!success) {
                 Log.e(TAG, "Style parsing failed.");
             }
@@ -164,12 +158,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         MapsInitializer.initialize(mView.getContext());
         mMap = googleMap;
 
-        boolean locationPermissionGranted = locationService.checkPermission();
-        if (!locationPermissionGranted) {
-            locationService.requestPermission();
-        }
-
         setMapStyle(R.raw.map_style);
+
+        mMap.setMyLocationEnabled(true);
+        LatLng currentLocation = mLocationUtils.getLastKnownLocation();
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 10.f));
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
 
