@@ -11,13 +11,20 @@
         android:id="@+id/mapFragment"
         android:name="utm.ptm.mtransport.MapFragment"
         android:layout_width="match_parent"
-        android:layout_height="678dp" />
+        android:layout_height="627dp" />
 
     <Button
         android:id="@+id/button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
+        android:text="Button" />
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick2"
         android:text="Button" />
 
 </LinearLayout>

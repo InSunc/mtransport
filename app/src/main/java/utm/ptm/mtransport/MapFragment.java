@@ -13,15 +13,33 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import utm.ptm.mtransport.data.models.Node;
+import utm.ptm.mtransport.data.models.RouteNode;
 import utm.ptm.mtransport.utils.LocationUtils;
 
 
@@ -33,7 +51,8 @@ import utm.ptm.mtransport.utils.LocationUtils;
  * Use the {@link MapFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MapFragment extends Fragment implements OnMapReadyCallback {
+public class MapFragment extends Fragment implements OnMapReadyCallback,
+        GoogleMap.OnMapClickListener {
 
     private static final String TAG = MapFragment.class.getSimpleName();
 
@@ -95,6 +114,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mView =  inflater.inflate(R.layout.fragment_map, container, false);
         return mView;
     }
+
+
 
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
@@ -160,15 +181,74 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         setMapStyle(R.raw.map_style);
 
+        UiSettings conf = mMap.getUiSettings();
+        conf.setMapToolbarEnabled(false);
+        conf.setZoomControlsEnabled(false);
+
         mMap.setMyLocationEnabled(true);
         LatLng currentLocation = mLocationUtils.getLastKnownLocation();
+
+        mMap.setOnMapClickListener(this);
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 10.f));
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
 
 
+    public GoogleMap getMap() {
+        return mMap;
+    }
 
+
+    public List<LatLng> getPath() {
+        return path;
+    }
+
+
+    public static List<LatLng> path = new ArrayList<>();
+    public void createRoute() {
+        RequestQueue queue = Volley.newRequestQueue(mView.getContext());
+        String url ="http://192.168.100.8:8080/routes";
+
+// Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        Gson gson = new Gson();
+                        mMap.addMarker(new MarkerOptions().position(LocationUtils.CHISINAU_COORD));
+                        RouteNode[] route = gson.fromJson(response, RouteNode[].class);
+
+                        LatLng firstNode = new LatLng(route[0].getNode().getLat(), route[0].getNode().getLng());
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(firstNode, 10.f));
+
+                        PolylineOptions polylineOptions = new PolylineOptions();
+                        for (RouteNode routeNode : route) {
+                            Node node = routeNode.getNode();
+                            LatLng coords = new LatLng(node.getLat(), node.getLng());
+                            polylineOptions.add(coords);
+                            path.add(coords);
+                            Log.i(TAG, ">> " + coords);
+                        }
+
+                        Polyline polyline = mMap.addPolyline(polylineOptions);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(mView.getContext(), "Req error", Toast.LENGTH_LONG).show();
+            }
+        });
+
+// Add the request to the RequestQueue.
+        queue.add(stringRequest);
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        mMap.addMarker(new MarkerOptions().position(latLng).title("Tapped here"));
+    }
 
 
     /**
