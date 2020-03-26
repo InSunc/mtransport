@@ -4,23 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.gson.Gson;
-
-import utm.ptm.mtransport.data.models.Node;
-import utm.ptm.mtransport.data.models.RouteNode;
+import utm.ptm.mtransport.helpers.MqttHelper;
 
 
 public class MainActivity extends AppCompatActivity implements MapFragment.OnFragmentInteractionListener{
@@ -28,11 +14,10 @@ public class MainActivity extends AppCompatActivity implements MapFragment.OnFra
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private MapFragment mapFragment;
+    private MqttHelper mqttHelper;
 
     private void execute() {
-
         mapFragment = (MapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment);
-
     }
 
     @Override
@@ -55,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements MapFragment.OnFra
 //
 //// Request a string response from the provided URL.
 //        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-//                new Response.Listener<String>() {
+//                new Response.Listener<String>() {2
 //                    @Override
 //                    public void onResponse(String response) {
 //                        // Display the first 500 characters of the response string.
@@ -81,8 +66,6 @@ public class MainActivity extends AppCompatActivity implements MapFragment.OnFra
     }
 
     public void onClick2(View view) {
-        PolylineOptions po = new PolylineOptions();
-        po.addAll(mapFragment.getPath());
-        mapFragment.getMap().addPolyline(po);
+
     }
 }

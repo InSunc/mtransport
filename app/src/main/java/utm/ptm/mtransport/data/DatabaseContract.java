@@ -11,12 +11,27 @@ public class DatabaseContract {
     public interface Stop extends BaseColumns {
         public static final String TABLE_NAME = "stops";
         public static final String _NAME = "name";
+        public static final String _ROUTE_NODE = "routeNode";
+
+        public static final String CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "("
+                + _ID + " INTEGER PRIMARY KEY "
+                + _NAME + " TEXT, "
+                + _ROUTE_NODE + " INTEGER "
+                + "FOREIGN KEY (" + _ROUTE_NODE + ") REFERENCES " + Node.TABLE_NAME
+                    + "(" + Node._ID + ")"
+                + "FOREIGN KEY (" + _ID + ") REFERENCES " + Node.TABLE_NAME
+                    + "(" + Node._ID + ")"
+                + ")";
+
+    }
+
+    public interface Node extends BaseColumns {
+        public static final String TABLE_NAME = "nodes";
         public static final String _LAT = "lat";
         public static final String _LNG = "lng";
 
         public static final String CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "("
                 + _ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + _NAME + " TEXT, "
                 + _LAT + " INTEGER, "
                 + _LNG + " INTEGER "
                 + ")";

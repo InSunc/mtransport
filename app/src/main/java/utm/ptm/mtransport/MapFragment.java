@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -31,16 +30,10 @@ import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import utm.ptm.mtransport.data.models.Node;
-import utm.ptm.mtransport.data.models.RouteNode;
-import utm.ptm.mtransport.utils.LocationUtils;
+import utm.ptm.mtransport.helpers.LocationHelper;
+import utm.ptm.mtransport.helpers.MqttHelper;
 
 
 /**
@@ -68,7 +61,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private GoogleMap mMap;
     private MapView mMapView;
     private View mView;
-    private LocationUtils mLocationUtils;
+    private LocationHelper mLocationHelper;
+    private MqttHelper mMqttHelper;
 
     private OnFragmentInteractionListener mListener;
 
@@ -112,6 +106,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         mView =  inflater.inflate(R.layout.fragment_map, container, false);
+        mLocationHelper = new LocationHelper(mView);
+        mMqttHelper = new MqttHelper(mView.getContext());
         return mView;
     }
 
@@ -134,7 +130,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             mMapView.onCreate(null);
             mMapView.onResume();
             mMapView.getMapAsync(this);
-            mLocationUtils = new LocationUtils(mView);
         }
     }
 
@@ -179,14 +174,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         MapsInitializer.initialize(mView.getContext());
         mMap = googleMap;
 
-        setMapStyle(R.raw.map_style);
+//        setMapStyle(R.raw.map_style);
 
         UiSettings conf = mMap.getUiSettings();
         conf.setMapToolbarEnabled(false);
+        conf.setMyLocationButtonEnabled(true);
         conf.setZoomControlsEnabled(false);
 
         mMap.setMyLocationEnabled(true);
-        LatLng currentLocation = mLocationUtils.getLastKnownLocation();
+        LatLng currentLocation = mLocationHelper.getLastKnownLocation();
 
         mMap.setOnMapClickListener(this);
 
@@ -200,15 +196,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
 
-    public List<LatLng> getPath() {
-        return path;
-    }
-
-
-    public static List<LatLng> path = new ArrayList<>();
     public void createRoute() {
         RequestQueue queue = Volley.newRequestQueue(mView.getContext());
-        String url ="http://192.168.100.8:8080/routes";
+        String url ="http://192.168.100.7:8080/routes/T2";
 
 // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -217,22 +207,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     public void onResponse(String response) {
                         // Display the first 500 characters of the response string.
                         Gson gson = new Gson();
-                        mMap.addMarker(new MarkerOptions().position(LocationUtils.CHISINAU_COORD));
-                        RouteNode[] route = gson.fromJson(response, RouteNode[].class);
-
-                        LatLng firstNode = new LatLng(route[0].getNode().getLat(), route[0].getNode().getLng());
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(firstNode, 10.f));
-
-                        PolylineOptions polylineOptions = new PolylineOptions();
-                        for (RouteNode routeNode : route) {
-                            Node node = routeNode.getNode();
-                            LatLng coords = new LatLng(node.getLat(), node.getLng());
-                            polylineOptions.add(coords);
-                            path.add(coords);
-                            Log.i(TAG, ">> " + coords);
-                        }
-
-                        Polyline polyline = mMap.addPolyline(polylineOptions);
+                        mMap.addMarker(new MarkerOptions().position(LocationHelper.CHISINAU_COORD));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(null, 10.f));
                     }
                 }, new Response.ErrorListener() {
             @Override

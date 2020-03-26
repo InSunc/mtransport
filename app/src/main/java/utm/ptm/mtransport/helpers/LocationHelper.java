@@ -1,4 +1,4 @@
-package utm.ptm.mtransport.utils;
+package utm.ptm.mtransport.helpers;
 
 import android.Manifest;
 import android.app.Activity;
@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.UiThread;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -20,9 +19,9 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.snackbar.Snackbar;
 
 
-public class LocationUtils implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class LocationHelper implements ActivityCompat.OnRequestPermissionsResultCallback {
 
-    private static final String TAG = LocationUtils.class.getSimpleName();
+    private static final String TAG = LocationHelper.class.getSimpleName();
 
     public static final LatLng CHISINAU_COORD = new LatLng(47.0105, 28.8638);
     private static final int ACCESS_FINE_LOCATION_CODE = 9000;
@@ -35,7 +34,8 @@ public class LocationUtils implements ActivityCompat.OnRequestPermissionsResultC
 
 
 
-    public LocationUtils(View view) {
+    public LocationHelper(View view) {
+
         mView = view;
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(mView.getContext());
         if (mLastKnownLocation == null) {

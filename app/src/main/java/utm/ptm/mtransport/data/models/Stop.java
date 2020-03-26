@@ -7,41 +7,24 @@ import com.google.android.gms.maps.model.LatLng;
 import utm.ptm.mtransport.data.DatabaseContract;
 
 public class Stop {
-
-    private long id;
     private String name;
-    private double lat;
-    private double lng;
+    private LatLng location;
 
-    public double getLat() {
-        return lat;
-    }
 
-    public double getLng() {
-        return lng;
-    }
-
-    public long getId() {
-        return id;
-    }
 
     public String getName() {
         return name;
     }
 
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public void setLat(double lat) {
-        this.lat = lat;
-    }
-
-    public void setLng(double lng) {
-        this.lng = lng;
+    public LatLng getLocation() {
+        return location;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setLocation(LatLng location) {
+        this.location = location;
     }
 }
