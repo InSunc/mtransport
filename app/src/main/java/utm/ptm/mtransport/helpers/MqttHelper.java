@@ -1,16 +1,13 @@
 package utm.ptm.mtransport.helpers;
 
-import android.app.Activity;
 import android.content.Context;
-import android.os.AsyncTask;
-import android.util.JsonReader;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -25,17 +22,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import utm.ptm.mtransport.MapFragment;
+import utm.ptm.mtransport.data.models.Transport;
+
 public class MqttHelper {
     private static final String TAG = MqttHelper.class.getSimpleName();
 
+    private Listener mListener;
 
-    private MqttAndroidClient mqttAndroidClient;
+    private static MqttAndroidClient mqttAndroidClient;
     private boolean connected;
     private List<String> topics = new ArrayList<>();
 
     final String serverUri = "tcp://opendata.dekart.com:1945";
 
-    public MqttHelper(final Context context){
+    public MqttHelper(MapFragment mapFragment) {
+        Context context = mapFragment.getContext();
+        mListener = (Listener) mapFragment;
         String clientId = generateId(7);
         mqttAndroidClient = new MqttAndroidClient(context, serverUri, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
@@ -48,15 +51,17 @@ public class MqttHelper {
 
             @Override
             public void connectionLost(Throwable throwable) {
-
+                Log.w(TAG, "Connection lost!");
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-
                 Gson gson = new Gson();
-                LatLng latLng = gson.fromJson(mqttMessage.toString(), LatLng.class);
-                Log.i(TAG, ">>>>>" + latLng.toString());
+                Transport transport = gson.fromJson(mqttMessage.toString(), Transport.class);
+                Log.i(TAG, ">>>>>" + transport.getBoard() + " - "
+                                        + transport.getLatitude() + " - "
+                                        + transport.getLongitude());
+                mListener.onMessageArrived(transport);
             }
 
             @Override
@@ -67,7 +72,7 @@ public class MqttHelper {
     }
 
 
-    private void setConnected(boolean value) {
+    public void setConnected(boolean value) {
         this.connected = value;
     }
 
@@ -85,7 +90,7 @@ public class MqttHelper {
         return buffer.toString();
     }
 
-    public void connect(){
+    public void connect() {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -115,7 +120,7 @@ public class MqttHelper {
 
                     token.waitForCompletion(10000);
 
-                } catch (MqttException e){
+                } catch (MqttException e) {
                     e.printStackTrace();
                 }
             }
@@ -125,12 +130,16 @@ public class MqttHelper {
 
 
     public void subscribe(String topic) {
-        if (connected){
+        if (connected) {
             try {
                 mqttAndroidClient.subscribe(topic, 0, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
-                        Log.i(TAG, " >>>>>> Subscribed!");
+                        Log.i(TAG, " >>>>>> Subscribed <<<<<<<");
+                        String[] topics = asyncActionToken.getTopics();
+                        for (String topic : topics) {
+                            Log.i(TAG, topic);
+                        }
                     }
 
                     @Override
@@ -145,4 +154,13 @@ public class MqttHelper {
         }
     }
 
+
+    public void disconnect() {
+        mqttAndroidClient.unregisterResources();
+        mqttAndroidClient.close();
+    }
+
+    public interface Listener {
+        public void onMessageArrived(Transport transport);
+    }
 }

@@ -14,7 +14,6 @@ public class MainActivity extends AppCompatActivity implements MapFragment.OnFra
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private MapFragment mapFragment;
-    private MqttHelper mqttHelper;
 
     private void execute() {
         mapFragment = (MapFragment) getSupportFragmentManager().findFragmentById(R.id.mapFragment);

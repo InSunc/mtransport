@@ -29,10 +29,20 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.Gson;
 
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import utm.ptm.mtransport.data.models.Transport;
 import utm.ptm.mtransport.helpers.LocationHelper;
+import utm.ptm.mtransport.helpers.MapHelper;
 import utm.ptm.mtransport.helpers.MqttHelper;
 
 
@@ -45,7 +55,7 @@ import utm.ptm.mtransport.helpers.MqttHelper;
  * create an instance of this fragment.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMapClickListener {
+        GoogleMap.OnMapClickListener, MqttHelper.Listener {
 
     private static final String TAG = MapFragment.class.getSimpleName();
 
@@ -63,6 +73,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private View mView;
     private LocationHelper mLocationHelper;
     private MqttHelper mMqttHelper;
+    private MapHelper mMapHelper;
 
     private OnFragmentInteractionListener mListener;
 
@@ -89,10 +100,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mMqttHelper.disconnect();
+        Log.d(TAG, "Destroyed");
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -107,7 +125,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         // Inflate the layout for this fragment
         mView =  inflater.inflate(R.layout.fragment_map, container, false);
         mLocationHelper = new LocationHelper(mView);
-        mMqttHelper = new MqttHelper(mView.getContext());
+        mMqttHelper = new MqttHelper(this);
         return mView;
     }
 
@@ -171,8 +189,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        mMqttHelper.connect();
         MapsInitializer.initialize(mView.getContext());
         mMap = googleMap;
+        mMapHelper = new MapHelper(this);
 
 //        setMapStyle(R.raw.map_style);
 
@@ -223,9 +243,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public void onMapClick(LatLng latLng) {
-        mMap.addMarker(new MarkerOptions().position(latLng).title("Tapped here"));
+//        mMap.addMarker(new MarkerOptions().position(latLng).title("Tapped here"));
     }
 
+    @Override
+    public void onMessageArrived(Transport transport) {
+        mMapHelper.mark(transport);
+    }
 
     /**
      * This interface must be implemented by activities that contain this
