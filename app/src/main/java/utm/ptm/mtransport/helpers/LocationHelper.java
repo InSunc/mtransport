@@ -4,14 +4,19 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -26,9 +31,13 @@ public class LocationHelper implements ActivityCompat.OnRequestPermissionsResult
     public static final LatLng CHISINAU_COORD = new LatLng(47.0105, 28.8638);
     private static final int ACCESS_FINE_LOCATION_CODE = 9000;
     private static final int MY_LOCATION_REQUEST_CODE = 9001;
+    private final int UPDATE_INTERVAL =  1000;
+    private final int FASTEST_INTERVAL = 900;
 
     private View mView;
     private static LatLng mLastKnownLocation;
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
     private boolean mLocationPermissionGranted = false;
     private FusedLocationProviderClient mFusedLocationProviderClient;
 
@@ -42,6 +51,34 @@ public class LocationHelper implements ActivityCompat.OnRequestPermissionsResult
             mLastKnownLocation = CHISINAU_COORD;
         }
         getLastKnownLocation();
+    }
+
+
+    public void stopLocationUpdates(){
+        mFusedLocationProviderClient.removeLocationUpdates(locationCallback);
+    }
+
+    public void startLocationUpdates() {
+        if (locationCallback == null) {
+            locationCallback = new LocationCallback() {
+                @Override
+                public void onLocationResult(LocationResult locationResult) {
+                    if (locationResult == null) {
+                        return;
+                    }
+                    for (Location location : locationResult.getLocations()) {
+//                        Toast.makeText(mView.getContext(), location.toString(), Toast.LENGTH_LONG).show();
+                        mLastKnownLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                    }
+                }
+            };
+        }
+        locationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(UPDATE_INTERVAL)
+                .setFastestInterval(FASTEST_INTERVAL);
+
+        mFusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback,Looper.getMainLooper());
     }
 
 

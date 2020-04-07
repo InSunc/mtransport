@@ -1,9 +1,17 @@
 package utm.ptm.mtransport.data;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
+import utm.ptm.mtransport.data.models.Route;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
 
@@ -33,7 +41,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         Log.i(TAG, "create");
-        db.execSQL(DatabaseContract.Stop.CREATE_TABLE);
+        db.execSQL(DatabaseContract.Route.CREATE_TABLE);
     }
 
 
@@ -41,100 +49,97 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.i(TAG, "update");
         // Drop older table if existed
-        db.execSQL("DROP TABLE IF EXISTS " + DatabaseContract.Stop.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + DatabaseContract.Route.TABLE_NAME);
 
         // Create tables again
         onCreate(db);
     }
 
+    public void insert(Route[] routes) {
+        SQLiteDatabase db = this.getWritableDatabase();
 
-//    public long insert(Node node) {
-//        long nodeId = -1;
-//
-//        int lat = (int) (node.getLat() * DatabaseContract.RESOLUTION);
-//        int lng = (int) (node.getLng() * DatabaseContract.RESOLUTION);
-//
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues contentValues = new ContentValues();
-//        contentValues.put(DatabaseContract.Node._LAT, lat);
-//        contentValues.put(DatabaseContract.Node._LNG, lng);
-//        nodeId = db.insert(DatabaseContract.Node.TABLE_NAME, null, contentValues);
-//
-//        return nodeId;
-//    }
-//
-//
-//    public long insert(Stop stop) {
-//        long stopId = -1;
-//
-//        int lat = (int) (stop.getNode().getLat() * DatabaseContract.RESOLUTION);
-//        int lng = (int) (stop.getNode().getLng() * DatabaseContract.RESOLUTION);
-//
-//        long nodeId = insert(stop.getNode());
-//
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        ContentValues contentValues = new ContentValues();
-//        contentValues = new ContentValues();
-//        contentValues.put(DatabaseContract.Stop._NAME, stop.getName());
-//        contentValues.put(DatabaseContract.Stop._ROUTE_NODE, nodeId);
-//        stopId = db.insert(DatabaseContract.Stop.TABLE_NAME, null, contentValues);
-//
-//        return stopId;
-//    }
+        for (Route route : routes) {
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DatabaseContract.Route._RID, route.getId());
+            contentValues.put(DatabaseContract.Route._NAME, route.getName());
+            db.insert(DatabaseContract.Route.TABLE_NAME, null, contentValues);
+        }
+    }
 
-//    public Stop getStop(Long id) {
-//        Stop stop = null;
-//
-//        SQLiteDatabase db = this.getReadableDatabase();
-//        Cursor cursor = db.query(DatabaseContract.Stop.TABLE_NAME,
-//                new String[]{DatabaseContract.Stop._NAME, DatabaseContract.Stop._LAT, DatabaseContract.Stop._LNG},
-//                DatabaseContract.Stop._ID + "=?",
-//                new String[]{String.valueOf(id)}, null, null, null);
-//
-//        if (cursor != null) {
-//            cursor.moveToFirst();
-//
-//            stop = new Stop();
-//            stop.setName(cursor.getString(cursor.getColumnIndex(DatabaseContract.Stop._NAME)));
-//            double lat = (double) (cursor.getInt(cursor.getColumnIndex(DatabaseContract.Stop._LAT)));
-//            double lng = (double) (cursor.getInt(cursor.getColumnIndex(DatabaseContract.Stop._LNG)));
-//            stop.setLat(lat);
-//            stop.setLng(lng);
-//            stop.setId(id);
-//
-//            cursor.close();
-//        }
-//
-//        return stop;
-//    }
-//
-//    public Stop getStop(LatLng coords) {
-//        Stop stop = null;
-//
-//        int lat = (int) (coords.latitude * DatabaseContract.RESOLUTION);
-//        int lng = (int) (coords.longitude * DatabaseContract.RESOLUTION);
-//
-//        SQLiteDatabase db = this.getReadableDatabase();
-//
-//        Cursor cursor = db.query(DatabaseContract.Stop.TABLE_NAME,
-//                null,
-//                DatabaseContract.Stop._LAT + "=? AND " + DatabaseContract.Stop._LNG + "=?",
-//                new String[]{String.valueOf(lat), String.valueOf(lng)},
-//                null, null, null);
-//
-//        if (cursor != null) {
-//            cursor.moveToFirst();
-//
-//            stop = new Stop();
-//            stop.setId(cursor.getInt(cursor.getColumnIndex(DatabaseContract.Stop._ID)));
-//            stop.setName(cursor.getString(cursor.getColumnIndex(DatabaseContract.Stop._NAME)));
-//            stop.setLat(coords.latitude);
-//            stop.setLng(coords.longitude);
-//
-//            cursor.close();
-//        }
-//
-//        return stop;
-//    }
+
+    public long insert(Route route) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(DatabaseContract.Route._RID, route.getId());
+        contentValues.put(DatabaseContract.Route._NAME, route.getName());
+
+        return db.insert(DatabaseContract.Route.TABLE_NAME, null, contentValues);
+    }
+
+    public List<Route> getRoutes() {
+        List<Route> routes = new ArrayList<>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(DatabaseContract.Route.TABLE_NAME,
+                new String[]{DatabaseContract.Route._RID, DatabaseContract.Route._NAME},
+                null, null, null, null, null);
+
+        if (cursor != null) {
+            cursor.moveToFirst();
+            for (int i = 0; i < cursor.getCount(); i++) {
+                Route route = new Route();
+                route.setName(cursor.getString(cursor.getColumnIndex(DatabaseContract.Route._NAME)));
+                route.setId(cursor.getString(cursor.getColumnIndex(DatabaseContract.Route._RID)));
+                routes.add(route);
+                cursor.moveToNext();
+            }
+            cursor.close();
+        }
+
+        return routes;
+    }
+
+    public List<String> getRouteIds() {
+        List<String> routeIds = new ArrayList<>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(DatabaseContract.Route.TABLE_NAME,
+                new String[]{DatabaseContract.Route._RID},
+                null, null, null, null, null);
+
+        if (cursor != null) {
+            cursor.moveToFirst();
+            for (int i = 0; i < cursor.getCount(); i++) {
+                routeIds.add(cursor.getString(cursor.getColumnIndex(DatabaseContract.Route._RID)));
+                cursor.moveToNext();
+            }
+            cursor.close();
+        }
+
+        return routeIds;
+    }
+
+
+    public Route getRoute(String routeId) {
+        Route route = null;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(DatabaseContract.Route.TABLE_NAME,
+                new String[]{DatabaseContract.Route._RID, DatabaseContract.Route._NAME},
+                DatabaseContract.Route._RID + "=?",
+                new String[]{ routeId }, null, null, null);
+
+        if (cursor != null) {
+            cursor.moveToFirst();
+
+            route = new Route();
+            route.setName(cursor.getString(cursor.getColumnIndex(DatabaseContract.Route._NAME)));
+            route.setId(cursor.getString(cursor.getColumnIndex(DatabaseContract.Route._RID)));
+
+            cursor.close();
+        }
+
+        return route;
+    }
 }

@@ -11,8 +11,6 @@ public class Route {
     private List<Way> ways;
     private List<Stop> stops;
 
-
-
     public String getId() {
         return id;
     }

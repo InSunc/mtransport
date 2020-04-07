@@ -10,19 +10,25 @@ import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import utm.ptm.mtransport.Constants;
 import utm.ptm.mtransport.MapFragment;
+import utm.ptm.mtransport.data.DatabaseHandler;
+import utm.ptm.mtransport.data.models.Route;
 import utm.ptm.mtransport.data.models.Transport;
 
 public class MqttHelper {
@@ -30,45 +36,51 @@ public class MqttHelper {
 
     private Listener mListener;
 
-    private static MqttAndroidClient mqttAndroidClient;
+    private static MqttAsyncClient mqttAndroidClient;
     private boolean connected;
+    private IMqttToken token;
     private List<String> topics = new ArrayList<>();
 
-    final String serverUri = "tcp://opendata.dekart.com:1945";
-
     public MqttHelper(MapFragment mapFragment) {
-        Context context = mapFragment.getContext();
+        final Context context = mapFragment.getContext();
         mListener = (Listener) mapFragment;
         String clientId = generateId(7);
-        mqttAndroidClient = new MqttAndroidClient(context, serverUri, clientId);
-        mqttAndroidClient.setCallback(new MqttCallbackExtended() {
-            @Override
-            public void connectComplete(boolean b, String s) {
-                Log.i(TAG, "Successfully connected to " + s);
-                setConnected(true);
-                subscribe("telemetry/route/2");
-            }
+        try {
+            mqttAndroidClient = new MqttAsyncClient(Constants.BROKER_URL, clientId, new MemoryPersistence());
+            mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+                @Override
+                public void connectComplete(boolean b, String s) {
+                    Log.i(TAG, "Successfully connected to " + s);
+                    setConnected(true);
+                    subscribeToRoutes();
+                }
 
-            @Override
-            public void connectionLost(Throwable throwable) {
-                Log.w(TAG, "Connection lost!");
-            }
+                @Override
+                public void connectionLost(Throwable throwable) {
+                    Log.w(TAG, "Connection lost!");
+                }
 
-            @Override
-            public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Gson gson = new Gson();
-                Transport transport = gson.fromJson(mqttMessage.toString(), Transport.class);
-                Log.i(TAG, ">>>>>" + transport.getBoard() + " - "
-                                        + transport.getLatitude() + " - "
-                                        + transport.getLongitude());
-                mListener.onMessageArrived(transport);
-            }
+                @Override
+                public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+                    Gson gson = new Gson();
+                    String data = mqttMessage.toString();
+                    data.substring(data.indexOf("{"));
+                    Transport transport = gson.fromJson(data, Transport.class);
+                    transport.setRouteId(topic);
+                    Log.i(TAG, ">>>>>" + transport.getBoard() + " - "
+                            + transport.getLatitude() + " - "
+                            + transport.getLongitude());
+                    mListener.onMessageArrived(transport);
+                }
 
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
 
-            }
-        });
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -88,6 +100,17 @@ public class MqttHelper {
         }
 
         return buffer.toString();
+    }
+
+    public void subscribeToRoutes() {
+        DatabaseHandler db = DatabaseHandler.getInstance(null);
+
+        List<String> routeIds = db.getRouteIds();
+        if (routeIds != null) {
+            for (String routeId : routeIds) {
+                subscribe(routeId);
+            }
+        }
     }
 
     public void connect() {
@@ -114,14 +137,27 @@ public class MqttHelper {
 
                         @Override
                         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                            Log.e(TAG, "Failed to connect to: " + serverUri + exception.toString());
+                            Log.e(TAG, "Failed to connect to: " + Constants.BROKER_URL + exception.toString());
                         }
                     });
 
-                    token.waitForCompletion(10000);
+                    token.waitForCompletion(3500);
 
                 } catch (MqttException e) {
-                    e.printStackTrace();
+                    switch (e.getReasonCode()) {
+                        case MqttException.REASON_CODE_BROKER_UNAVAILABLE:
+                        case MqttException.REASON_CODE_CLIENT_TIMEOUT:
+                        case MqttException.REASON_CODE_CONNECTION_LOST:
+                        case MqttException.REASON_CODE_SERVER_CONNECT_ERROR:
+                            Log.v(TAG, "CONNECTION " + e.getMessage());
+                            e.printStackTrace();
+                            break;
+                        case MqttException.REASON_CODE_FAILED_AUTHENTICATION:
+                            Log.e(TAG, "REASON_CODE_FAILED_AUTHENTICATION" + e.getMessage());
+                            break;
+                        default:
+                            Log.e(TAG, "Emm: " + e.getMessage());
+                    }
                 }
             }
         });
@@ -136,9 +172,10 @@ public class MqttHelper {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
                         Log.i(TAG, " >>>>>> Subscribed <<<<<<<");
-                        String[] topics = asyncActionToken.getTopics();
-                        for (String topic : topics) {
+                        String[] topicsArray = asyncActionToken.getTopics();
+                        for (String topic : topicsArray) {
                             Log.i(TAG, topic);
+                            topics.add(topic);
                         }
                     }
 
@@ -156,8 +193,11 @@ public class MqttHelper {
 
 
     public void disconnect() {
-        mqttAndroidClient.unregisterResources();
-        mqttAndroidClient.close();
+        try {
+            mqttAndroidClient.disconnect();
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
     public interface Listener {

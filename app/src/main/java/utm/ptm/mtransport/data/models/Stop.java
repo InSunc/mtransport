@@ -10,8 +10,6 @@ public class Stop {
     private String name;
     private LatLng location;
 
-
-
     public String getName() {
         return name;
     }

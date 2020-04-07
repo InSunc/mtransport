@@ -13,7 +13,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -30,17 +32,22 @@ import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
+import utm.ptm.mtransport.data.DatabaseHandler;
+import utm.ptm.mtransport.data.models.Route;
 import utm.ptm.mtransport.data.models.Transport;
+import utm.ptm.mtransport.data.models.TransportMarker;
+import utm.ptm.mtransport.data.models.Way;
+import utm.ptm.mtransport.helpers.GeofenceHelper;
 import utm.ptm.mtransport.helpers.LocationHelper;
 import utm.ptm.mtransport.helpers.MapHelper;
 import utm.ptm.mtransport.helpers.MqttHelper;
@@ -55,7 +62,7 @@ import utm.ptm.mtransport.helpers.MqttHelper;
  * create an instance of this fragment.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMapClickListener, MqttHelper.Listener {
+        GoogleMap.OnMapClickListener, MqttHelper.Listener, GeofenceHelper.Listener {
 
     private static final String TAG = MapFragment.class.getSimpleName();
 
@@ -71,9 +78,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private GoogleMap mMap;
     private MapView mMapView;
     private View mView;
+
     private LocationHelper mLocationHelper;
     private MqttHelper mMqttHelper;
     private MapHelper mMapHelper;
+    private GeofenceHelper mGeofenceHelper;
+
+    private HashMap<Transport, Marker> transportMarkers;
+    private List<String> observingRoutes;
 
     private OnFragmentInteractionListener mListener;
 
@@ -115,6 +127,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
+
     }
 
 
@@ -126,6 +140,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         mView =  inflater.inflate(R.layout.fragment_map, container, false);
         mLocationHelper = new LocationHelper(mView);
         mMqttHelper = new MqttHelper(this);
+        mGeofenceHelper = new GeofenceHelper(this);
+
         return mView;
     }
 
@@ -139,6 +155,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
 
+    public List<String> getObservingRoutes() {
+        return observingRoutes;
+    }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -192,7 +211,34 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         mMqttHelper.connect();
         MapsInitializer.initialize(mView.getContext());
         mMap = googleMap;
-        mMapHelper = new MapHelper(this);
+        observingRoutes = new ArrayList<>();
+        transportMarkers = new HashMap<>();
+        mMapHelper = new MapHelper(this, observingRoutes, transportMarkers);
+
+        LinearLayout routesList = mView.findViewById(R.id.routes_list);
+        List<String> routeIds = DatabaseHandler.getInstance(mView.getContext()).getRouteIds();
+
+        for (String routeId : routeIds) {
+            ToggleButton button = new ToggleButton(mView.getContext());
+            button.setTextOff(routeId);
+            button.setTextOn(routeId);
+            button.setText(routeId);
+            button.setHighlightColor(getResources().getColor(R.color.colorPrimary));
+            button.setCompoundDrawablesWithIntrinsicBounds(R.drawable.trolleybus_icon, 0, 0,0);
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    ToggleButton button = (ToggleButton) v;
+                    if (button.isChecked()) {
+                        mMapHelper.startTracking(button.getText().toString());
+                    } else {
+                        mMapHelper.stopTracking(button.getText().toString());
+                    }
+                }
+            });
+            routesList.addView(button);
+        }
+
 
 //        setMapStyle(R.raw.map_style);
 
@@ -216,9 +262,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
 
+    List<LatLng> simulatioonPoints;
     public void createRoute() {
         RequestQueue queue = Volley.newRequestQueue(mView.getContext());
-        String url ="http://192.168.100.7:8080/routes/T2";
+        String url ="http://192.168.100.7:8080/ways";
 
 // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -227,8 +274,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                     public void onResponse(String response) {
                         // Display the first 500 characters of the response string.
                         Gson gson = new Gson();
-                        mMap.addMarker(new MarkerOptions().position(LocationHelper.CHISINAU_COORD));
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(null, 10.f));
+                        Route route = gson.fromJson(response, Route.class);
+                        List<Way> ways = route.getWays();
+                        for (Way way : ways) {
+//                            MarkerOptions mo = new MarkerOptions();
+//                            mo.position(way.getPoints().get(0));
+//                            mMap.addMarker(mo);
+//                            mo.position(way.getPoints().get(way.getPoints().size() - 1));
+//                            mMap.addMarker(mo);
+
+                            List<LatLng> points = way.getPoints();
+                            final PolylineOptions polylineOptions = new PolylineOptions();
+                            polylineOptions.addAll(points);
+                            polylineOptions.color(new Random().nextInt());
+                            mMap.addPolyline(polylineOptions);
+                        }
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -241,14 +301,28 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         queue.add(stringRequest);
     }
 
+    public MapHelper getmMapHelper() {
+        return mMapHelper;
+    }
+
     @Override
     public void onMapClick(LatLng latLng) {
 //        mMap.addMarker(new MarkerOptions().position(latLng).title("Tapped here"));
+        Random nr = new Random();
+        String id = String.valueOf(nr.nextInt());
+        mGeofenceHelper.removeGeofences();
+        mGeofenceHelper.addGeofence(latLng, id);
+
     }
 
     @Override
     public void onMessageArrived(Transport transport) {
         mMapHelper.mark(transport);
+    }
+
+    @Override
+    public void onAddedGeofence(LatLng position) {
+        mMapHelper.mark(position);
     }
 
     /**
