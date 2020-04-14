@@ -34,7 +34,7 @@ public class GeofenceHelper {
     private GeofencingClient geofencingClient;
     private PendingIntent geofencePendingIntent;
     public static final long GEOFENCE_DURATION = 60 * 60 * 1000;
-    public static final float GEOFENCE_RADIUS = 50.0f; // in meters
+    public static final float GEOFENCE_RADIUS = 15.0f; // in meters
 
     public GeofenceHelper(MapFragment mapFragment) {
         this.context = mapFragment.getContext();

@@ -14,6 +14,7 @@ public class Transport {
     double latitude;
     double longitude;
     String routeId;
+    int loadLevel;
 
     public String getRouteId() {
         return routeId;
@@ -31,6 +32,10 @@ public class Transport {
         return longitude;
     }
 
+    public int getLoadLevel() {
+        return loadLevel;
+    }
+
     public void setBoard(int board) {
         this.board = board;
     }
@@ -45,6 +50,10 @@ public class Transport {
 
     public void setRouteId(String routeId) {
         this.routeId = routeId;
+    }
+
+    public void setLoadLevel(int loadLevel) {
+        this.loadLevel = loadLevel;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)

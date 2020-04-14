@@ -37,15 +37,13 @@ import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 import utm.ptm.mtransport.data.DatabaseHandler;
 import utm.ptm.mtransport.data.models.Route;
 import utm.ptm.mtransport.data.models.Transport;
-import utm.ptm.mtransport.data.models.TransportMarker;
+import utm.ptm.mtransport.data.models.Trip;
 import utm.ptm.mtransport.data.models.Way;
 import utm.ptm.mtransport.helpers.GeofenceHelper;
 import utm.ptm.mtransport.helpers.LocationHelper;
@@ -62,7 +60,7 @@ import utm.ptm.mtransport.helpers.MqttHelper;
  * create an instance of this fragment.
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback,
-        GoogleMap.OnMapClickListener, MqttHelper.Listener, GeofenceHelper.Listener {
+        MqttHelper.Listener, GeofenceHelper.Listener, MapHelper.Listener {
 
     private static final String TAG = MapFragment.class.getSimpleName();
 
@@ -87,7 +85,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     private HashMap<Transport, Marker> transportMarkers;
     private List<String> observingRoutes;
 
-    private OnFragmentInteractionListener mListener;
+    private Listener mListener;
 
     public MapFragment() {
         // Required empty public constructor
@@ -147,14 +145,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
 
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-
     public List<String> getObservingRoutes() {
         return observingRoutes;
     }
@@ -175,8 +165,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+        if (context instanceof Listener) {
+            mListener = (Listener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -224,15 +214,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             button.setTextOn(routeId);
             button.setText(routeId);
             button.setHighlightColor(getResources().getColor(R.color.colorPrimary));
-            button.setCompoundDrawablesWithIntrinsicBounds(R.drawable.trolleybus_icon, 0, 0,0);
+            button.setAlpha(0.6f);
+            button.setCompoundDrawablesWithIntrinsicBounds(R.drawable.trolleybus_off_icon, 0, 0,0);
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     ToggleButton button = (ToggleButton) v;
                     if (button.isChecked()) {
                         mMapHelper.startTracking(button.getText().toString());
+                        button.setAlpha(1.0f);
                     } else {
                         mMapHelper.stopTracking(button.getText().toString());
+                        button.setAlpha(0.6f);
                     }
                 }
             });
@@ -246,11 +239,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         conf.setMapToolbarEnabled(false);
         conf.setMyLocationButtonEnabled(true);
         conf.setZoomControlsEnabled(false);
+        conf.setCompassEnabled(true);
 
         mMap.setMyLocationEnabled(true);
         LatLng currentLocation = mLocationHelper.getLastKnownLocation();
 
-        mMap.setOnMapClickListener(this);
+        mMap.setOnMapClickListener(mMapHelper);
+        mMap.setOnMapLongClickListener(mMapHelper);
 
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 10.f));
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
@@ -262,58 +257,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
 
-    List<LatLng> simulatioonPoints;
-    public void createRoute() {
-        RequestQueue queue = Volley.newRequestQueue(mView.getContext());
-        String url ="http://192.168.100.7:8080/ways";
-
-// Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Display the first 500 characters of the response string.
-                        Gson gson = new Gson();
-                        Route route = gson.fromJson(response, Route.class);
-                        List<Way> ways = route.getWays();
-                        for (Way way : ways) {
-//                            MarkerOptions mo = new MarkerOptions();
-//                            mo.position(way.getPoints().get(0));
-//                            mMap.addMarker(mo);
-//                            mo.position(way.getPoints().get(way.getPoints().size() - 1));
-//                            mMap.addMarker(mo);
-
-                            List<LatLng> points = way.getPoints();
-                            final PolylineOptions polylineOptions = new PolylineOptions();
-                            polylineOptions.addAll(points);
-                            polylineOptions.color(new Random().nextInt());
-                            mMap.addPolyline(polylineOptions);
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(mView.getContext(), "Req error", Toast.LENGTH_LONG).show();
-            }
-        });
-
-// Add the request to the RequestQueue.
-        queue.add(stringRequest);
-    }
-
     public MapHelper getmMapHelper() {
         return mMapHelper;
     }
 
-    @Override
-    public void onMapClick(LatLng latLng) {
-//        mMap.addMarker(new MarkerOptions().position(latLng).title("Tapped here"));
-        Random nr = new Random();
-        String id = String.valueOf(nr.nextInt());
-        mGeofenceHelper.removeGeofences();
-        mGeofenceHelper.addGeofence(latLng, id);
-
-    }
 
     @Override
     public void onMessageArrived(Transport transport) {
@@ -325,18 +272,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         mMapHelper.mark(position);
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+    @Override
+    public void onFoundTrip(Trip trip) {
+        mListener.onFoundTrip(trip);
+    }
+
+
+    public interface Listener {
+        void onFoundTrip(Trip trip);
     }
 }

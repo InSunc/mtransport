@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+        <item android:id="@+id/nav_menu"
+            android:state_checked="false"
+            android:icon="@drawable/ic_menu_black_24dp"
+            android:title="Meniu"/>
+
+        <item android:id="@+id/nav_search"
+            android:state_checked="true"
+            android:icon="@drawable/ic_directions_black_24dp"
+            android:title="Rute" />
+
+        <item android:id="@+id/nav_tickets"
+            android:state_checked="false"
+            android:icon="@drawable/ic_receipt_black_24dp"
+            android:title="Tichete" />
+</menu>
