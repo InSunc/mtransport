@@ -1,5 +1,6 @@
 package utm.ptm.mtransport;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
@@ -9,10 +10,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -23,6 +27,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.common.util.Predicate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -38,6 +43,7 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import utm.ptm.mtransport.data.DatabaseHandler;
@@ -51,14 +57,7 @@ import utm.ptm.mtransport.helpers.MapHelper;
 import utm.ptm.mtransport.helpers.MqttHelper;
 
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link MapFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link MapFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+
 public class MapFragment extends Fragment implements OnMapReadyCallback,
         MqttHelper.Listener, GeofenceHelper.Listener, MapHelper.Listener {
 
@@ -109,6 +108,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         return fragment;
     }
 
+    public List<Transport> getObservingTransport() {
+        List<Transport> transports= new ArrayList<>();
+        for (Transport transport : transportMarkers.keySet()) {
+            Log.i(TAG, "getObservingTransport: " + transport.getRouteId());
+            if (observingRoutes.contains(transport.getRouteId())) {
+                transports.add(transport);
+            }
+        }
+
+        return transports;
+    }
 
     @Override
     public void onDestroy() {
@@ -136,6 +146,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         mView =  inflater.inflate(R.layout.fragment_map, container, false);
+
         mLocationHelper = new LocationHelper(mView);
         mMqttHelper = new MqttHelper(this);
         mGeofenceHelper = new GeofenceHelper(this);
@@ -196,11 +207,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
 
 
 
+
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMqttHelper.connect();
         MapsInitializer.initialize(mView.getContext());
+
+
+        int heightPixels = Resources.getSystem().getDisplayMetrics().heightPixels;
         mMap = googleMap;
+        mMap.setPadding(0, 0, 0, (int)(heightPixels * 0.85));
         observingRoutes = new ArrayList<>();
         transportMarkers = new HashMap<>();
         mMapHelper = new MapHelper(this, observingRoutes, transportMarkers);
@@ -219,6 +236,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+
                     ToggleButton button = (ToggleButton) v;
                     if (button.isChecked()) {
                         mMapHelper.startTracking(button.getText().toString());
@@ -273,12 +291,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     @Override
-    public void onFoundTrip(Trip trip) {
-        mListener.onFoundTrip(trip);
+    public void onFoundTrip(Trip[] trips) {
+        mListener.onFoundTrip(trips);
     }
 
 
     public interface Listener {
-        void onFoundTrip(Trip trip);
+        void onFoundTrip(Trip[] trips);
     }
 }

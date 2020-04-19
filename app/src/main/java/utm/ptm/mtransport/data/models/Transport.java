@@ -1,5 +1,6 @@
 package utm.ptm.mtransport.data.models;
 
+import android.location.Location;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
@@ -70,5 +71,13 @@ public class Transport {
     @Override
     public int hashCode() {
         return Objects.hash(board);
+    }
+
+    public Location getLocation() {
+        Location location = new Location("T");
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+
+        return location;
     }
 }

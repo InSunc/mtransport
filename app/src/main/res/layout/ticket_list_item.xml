@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="50px"
+    android:paddingBottom="50px">
+
+    <TextView
+        android:id="@+id/routeIdText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:drawableLeft="@drawable/ic_qr_code"
+        android:drawablePadding="30px"
+        android:fontFamily="@font/ubuntu"
+        android:gravity="center_vertical"
+        android:text="routeId"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/creationTimeText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/ubuntu"
+        android:gravity="center"
+        android:text="TextView"
+        android:textAlignment="gravity"
+        android:textColor="#000000"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/expirationTimeText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/ubuntu"
+        android:text="TextView"
+        android:textAlignment="viewEnd"
+        android:textColor="#000000"
+        android:textSize="18sp" />
+
+</LinearLayout>

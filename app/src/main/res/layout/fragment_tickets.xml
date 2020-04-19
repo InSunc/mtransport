@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/foundTripsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/rounded_corners"
     android:orientation="vertical"
-    tools:context=".FindRoutesFragment">
+    tools:context=".TicketsFragment">
 
     <!-- TODO: Update blank fragment layout -->
 
@@ -15,36 +13,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:paddingLeft="50px"
+        android:paddingRight="50px"
+        android:paddingTop="20px"
         android:paddingBottom="20px">
 
-        <TextView
-            android:id="@+id/tripText"
-            android:layout_width="wrap_content"
-            android:layout_height="58dp"
-            android:layout_weight="1"
-            android:drawableLeft="@drawable/ic_directions_bus_black_24dp"
-            android:fontFamily="@font/ubuntu"
-            android:gravity="center_vertical"
-            android:paddingLeft="50px"
-            android:text="Trip data"
-            android:textColor="#000000"
-            android:textSize="18sp" />
+            <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/timeText"
-            android:layout_width="wrap_content"
-            android:layout_height="58dp"
-            android:layout_weight="0"
-            android:drawableRight="@drawable/ic_access_time_black_24dp"
-            android:fontFamily="@font/ubuntu"
-            android:gravity="center_vertical"
-            android:paddingRight="50px"
-            android:text="TIME"
-            android:textAlignment="textEnd"
-            android:textColor="#000000"
-            android:textSize="18sp" />
+            <RadioGroup
+                android:id="@+id/ticketRoutesList"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation='horizontal'
+                android:paddingTop="24px"/>
+        </HorizontalScrollView>
+
+        <Button
+            android:id="@+id/buyTicket"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:text="Achitare" />
 
     </LinearLayout>
+
 
     <View
         android:layout_width="300dp"
@@ -52,33 +47,23 @@
         android:layout_gravity="center"
         android:background="@android:color/darker_gray"/>
 
-    <ListView
-        android:id="@+id/found_trips_list"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="50px">
-
-    </ListView>
-
     <LinearLayout
-        android:id="@+id/foundTripHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingLeft="50px"
-        android:paddingTop="100px"
-        android:paddingRight="50px"
-        android:visibility="gone">
+        android:paddingTop="50px"
+        android:paddingRight="50px">
 
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/ubuntu"
             android:gravity="center"
             android:paddingRight="50px"
-            android:text="Stația"
+            android:text="Ruta"
             android:textAlignment="gravity"
             android:textColor="#000000"
             android:textSize="18sp"
@@ -87,24 +72,41 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@font/ubuntu"
             android:gravity="center"
-            android:text="Ruta"
+            android:text="Creat"
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/ubuntu"
+            android:text="Expirat"
+            android:textAlignment="viewEnd"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/tripStopsList"
+    <RadioGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation='horizontal'/>
+
+    <ListView
+        android:id="@+id/ticketList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:paddingLeft="50px"
         android:paddingRight="50px"
-        android:visibility="gone"></LinearLayout>
+        android:scrollbars="horizontal">
+
+    </ListView>
 
 </LinearLayout>

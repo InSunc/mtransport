@@ -7,6 +7,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
@@ -63,7 +64,7 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
         this.context = mapFragment.getContext();
         mListener = (Listener) mapFragment;
         this.observingRoutes = observingRoutes;
-        this.transportMarkers = new HashMap<>();
+        this.transportMarkers = transportMarkerMap;
         tripMarkers = new ArrayList<>();
         path = new ArrayList<>();
     }
@@ -108,17 +109,38 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
         return markerOptions;
     }
 
+    public void drawTrip(Trip trip) {
+        for (Stop stop : trip.stops) {
+            MarkerOptions mo = markStop(stop);
+            tripMarkers.add(mMap.addMarker(mo));
+        }
+        drawPath(trip.ways);
+    }
 
-    public void mark(Transport transport) {
-        Log.i(TAG, "onMessageArrived: MARKED");
-        if (observingRoutes.contains(transport.getRouteId())) {
-            new MarkingTask().execute(transport);
+    private void drawPath(Iterable<Way> ways) {
+        if (!path.isEmpty()) {
+            for (Polyline polyline : path) {
+                polyline.remove();
+            }
+        }
+        for (Way way : ways) {
+            final PolylineOptions polylineOptions = new PolylineOptions();
+            polylineOptions.addAll(way.getPoints());
+            polylineOptions.color(context.getResources().getColor(R.color.path));
+            Polyline polyline = mMap.addPolyline(polylineOptions);
+            path.add(polyline);
         }
     }
 
 
     @Override
     public void onMapClick(LatLng latLng) {
+        Transport transport = new Transport();
+        transport.setRouteId("T2");
+        transport.setBoard(100);
+        transport.setLatitude(latLng.latitude);
+        transport.setLongitude(latLng.longitude);
+        mark(transport);
     }
 
     @Override
@@ -150,22 +172,22 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
                             @Override
                             public void onResponse(String response) {
                                 Gson gson = new Gson();
-                                Trip trip = gson.fromJson(response, Trip.class);
+                                Trip[] trips = gson.fromJson(response, Trip[].class);
 
-                                mListener.onFoundTrip(trip);
+                                mListener.onFoundTrip(trips);
 
-                                for (Stop stop : trip.stops) {
-                                    MarkerOptions mo = markStop(stop);
-                                    tripMarkers.add(mMap.addMarker(mo));
-                                }
-
-                                for (Way way : trip.ways) {
-                                    final PolylineOptions polylineOptions = new PolylineOptions();
-                                    polylineOptions.addAll(way.getPoints());
-                                    polylineOptions.color(context.getResources().getColor(R.color.path));
-                                    Polyline polyline = mMap.addPolyline(polylineOptions);
-                                    path.add(polyline);
-                                }
+//                                for (Stop stop : trip.stops) {
+//                                    MarkerOptions mo = markStop(stop);
+//                                    tripMarkers.add(mMap.addMarker(mo));
+//                                }
+//
+//                                for (Way way : trip.ways) {
+//                                    final PolylineOptions polylineOptions = new PolylineOptions();
+//                                    polylineOptions.addAll(way.getPoints());
+//                                    polylineOptions.color(context.getResources().getColor(R.color.path));
+//                                    Polyline polyline = mMap.addPolyline(polylineOptions);
+//                                    path.add(polyline);
+//                                }
 //                                Trip[] trips = gson.fromJson(response, Trip[].class);
 //                                for (Trip trip : trips) {
 //                                    Random random = new Random();
@@ -227,6 +249,12 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
         }
     }
 
+    public void mark(Transport transport) {
+        Log.i(TAG, "onMessageArrived: MARKED");
+        if (observingRoutes.contains(transport.getRouteId())) {
+            new MarkingTask().execute(transport);
+        }
+    }
 
     private class MarkingTask extends AsyncTask<Transport, Void, Pair<Transport, MarkerOptions>> {
         @Override
@@ -285,6 +313,6 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
 
 
     public interface Listener {
-        void onFoundTrip(Trip trip);
+        void onFoundTrip(Trip[] trips);
     }
 }

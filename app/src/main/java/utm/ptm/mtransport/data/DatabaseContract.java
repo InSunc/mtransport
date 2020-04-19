@@ -37,4 +37,21 @@ public class DatabaseContract {
                 + ")";
     }
 
+
+    public interface Ticket extends BaseColumns {
+        public static final String TABLE_NAME = "tickets";
+        public static final String _ID = "id";
+        public static final String _TRANSPORT_ID = "transport_id";
+        public static final String _VALIDATION_TIME = "validation_time";
+        public static final String _EXPIRATION_TIME = "expiration_time";
+
+
+        public static final String CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "("
+                + _ID + " INTEGER PRIMARY KEY ,"
+                + _TRANSPORT_ID + " INTEGER PRIMARY KEY ,"
+                + _VALIDATION_TIME + " DATE, "
+                + _EXPIRATION_TIME + " DATE, "
+                + ")";
+    }
+
 }
