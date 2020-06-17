@@ -2,12 +2,19 @@ package utm.ptm.mtransport.helpers;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
+
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
@@ -41,12 +48,17 @@ import utm.ptm.mtransport.data.models.Transport;
 import utm.ptm.mtransport.data.models.Trip;
 import utm.ptm.mtransport.data.models.Way;
 
-public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener {
+public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener
+                                , GoogleMap.OnCameraMoveListener {
     private static final String TAG = MapHelper.class.getSimpleName();
 
     private Listener mListener;
     private final Context context;
     private final GoogleMap mMap;
+
+    @Override
+    public void onCameraMove() {
+    }
 
     private enum LongClickState {SELECT_ORIGIN, SELECT_DESTINATION, CLEAR}
 
@@ -268,33 +280,57 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
 
             LatLng location = new LatLng(transport.getLatitude(), transport.getLongitude());
 
-            BitmapDrawable bitmapdraw = null;
+            
+            BitmapDrawable iconDrawable = null;
             switch (transport.getLoadLevel()) {
                 case 0: {
-                    bitmapdraw = (BitmapDrawable) context.getResources().getDrawable(R.drawable.green_transport_mark);
+                    iconDrawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.green_transport_mark);
                     break;
                 }
 
                 case 1: {
-                    bitmapdraw = (BitmapDrawable) context.getResources().getDrawable(R.drawable.yellow_transport_mark);
+                    iconDrawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.yellow_transport_mark);
                     break;
                 }
 
                 case 2: {
-                    bitmapdraw = (BitmapDrawable) context.getResources().getDrawable(R.drawable.red_transport_mark);
+                    iconDrawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.red_transport_mark);
                     break;
                 }
             }
-            Bitmap bmp = bitmapdraw.getBitmap();
-            bmp = Bitmap.createScaledBitmap(bmp, 35, 35, false);
+
+            final int INDICATOR_WIDTH = 120;
+            final int INDICATOR_HEIGHT = 70;
+            final int ICON_SIZE = 35;
+
+            BitmapDrawable cloudDrawable = (BitmapDrawable) context.getResources().getDrawable(R.drawable.cloud);
+            Bitmap bmp = Bitmap.createBitmap(INDICATOR_WIDTH, INDICATOR_HEIGHT, Bitmap.Config.ARGB_8888);
+
+            Canvas canvas = new Canvas(bmp);
+            Paint paint = new Paint();
+            paint.setTextSize(30);
+            paint.setColor(Color.BLACK);
+            paint.setFakeBoldText(true);
+            paint.setElegantTextHeight(true);
+            paint.setLinearText(true);
+
+            RectF iconArea = new RectF(0, 0, ICON_SIZE, ICON_SIZE);
+            RectF textArea = new RectF(ICON_SIZE, 0, INDICATOR_WIDTH, INDICATOR_HEIGHT);
+
+            canvas.drawBitmap(iconDrawable.getBitmap(), null, iconArea, null);
+            canvas.drawBitmap(cloudDrawable.getBitmap(), null, textArea, null);
+            String indicatorText = transport.getRouteId();
+            // center text in the cloud image
+            int textPosX = ICON_SIZE + 15;
+            textPosX = indicatorText.length() == 2 ? textPosX + 10 : textPosX;
+            canvas.drawText(indicatorText, textPosX, ICON_SIZE + 15, paint);
 
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(location)
                     .icon(BitmapDescriptorFactory.fromBitmap(bmp))
-                    .anchor(0.5f, 0.5f);
+                    .anchor(0.1f, 0.5f);
 
             return new Pair(transport, (Object) markerOptions);
-
         }
 
         @Override

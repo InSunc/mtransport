@@ -41,6 +41,7 @@ import java.util.concurrent.LinkedTransferQueue;
 
 import utm.ptm.mtransport.data.DatabaseHandler;
 import utm.ptm.mtransport.data.models.Route;
+import utm.ptm.mtransport.data.models.Stop;
 import utm.ptm.mtransport.data.models.Transport;
 import utm.ptm.mtransport.data.models.Trip;
 import utm.ptm.mtransport.helpers.LocationHelper;

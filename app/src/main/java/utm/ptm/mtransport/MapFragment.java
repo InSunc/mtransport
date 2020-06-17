@@ -35,6 +35,7 @@ import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -48,6 +49,7 @@ import java.util.Random;
 
 import utm.ptm.mtransport.data.DatabaseHandler;
 import utm.ptm.mtransport.data.models.Route;
+import utm.ptm.mtransport.data.models.Stop;
 import utm.ptm.mtransport.data.models.Transport;
 import utm.ptm.mtransport.data.models.Trip;
 import utm.ptm.mtransport.data.models.Way;
@@ -251,7 +253,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         }
 
 
-//        setMapStyle(R.raw.map_style);
+        setMapStyle(R.raw.simple_map);
 
         UiSettings conf = mMap.getUiSettings();
         conf.setMapToolbarEnabled(false);
@@ -259,7 +261,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback,
         conf.setZoomControlsEnabled(false);
         conf.setCompassEnabled(true);
 
+        mMap.setMaxZoomPreference(20f);
+        mMap.setMinZoomPreference(8f);
         mMap.setMyLocationEnabled(true);
+        LatLngBounds latLngBounds = new LatLngBounds(new LatLng(45.521744,27.252845) ,
+                                                     new LatLng(48.574790,29.671708));
+        mMap.setLatLngBoundsForCameraTarget(latLngBounds);
         LatLng currentLocation = mLocationHelper.getLastKnownLocation();
 
         mMap.setOnMapClickListener(mMapHelper);
