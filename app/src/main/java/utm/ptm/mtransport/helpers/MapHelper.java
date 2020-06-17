@@ -2,7 +2,11 @@ package utm.ptm.mtransport.helpers;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -268,6 +272,7 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
 
             LatLng location = new LatLng(transport.getLatitude(), transport.getLongitude());
 
+            
             BitmapDrawable bitmapdraw = null;
             switch (transport.getLoadLevel()) {
                 case 0: {
@@ -285,13 +290,31 @@ public class MapHelper implements GoogleMap.OnMapClickListener, GoogleMap.OnMapL
                     break;
                 }
             }
-            Bitmap bmp = bitmapdraw.getBitmap();
-            bmp = Bitmap.createScaledBitmap(bmp, 35, 35, false);
+
+
+            Bitmap bmp = Bitmap.createBitmap(100, 35, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bmp);
+            Paint paint = new Paint();
+            paint.setColor(Color.BLACK);
+            paint.setTextSize(35);
+            paint.setFakeBoldText(true);
+            paint.setElegantTextHeight(true);
+            paint.setLinearText(true);
+            Paint ovalPaint = new Paint();
+            ovalPaint.setColor(Color.WHITE);
+
+
+            RectF iconArea = new RectF(0, 0, 35, 35);
+            RectF textArea = new RectF(100, 35, 35, 35);
+
+            canvas.drawBitmap(bitmapdraw.getBitmap(), null, iconArea, null);
+            canvas.drawText(transport.getRouteId(), 35, 35, paint);
+            canvas.drawOval(textArea, ovalPaint);
 
             MarkerOptions markerOptions = new MarkerOptions();
             markerOptions.position(location)
                     .icon(BitmapDescriptorFactory.fromBitmap(bmp))
-                    .anchor(0.5f, 0.5f);
+                    .anchor(0.25f, 0.5f);
 
             return new Pair(transport, (Object) markerOptions);
 
